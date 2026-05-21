@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartPark Kampus - Sistem IoT Prediksi Parkir</title>
+  <meta name="description" content="Sistem IoT cerdas untuk monitoring dan prediksi ketersediaan parkir kampus secara real-time berbasis data sensor.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="brand-icon">🅿️</div>
+        <div class="brand-text">SmartPark<span class="brand-sub">Kampus IoT System</span></div>
+      </a>
+      <ul class="navbar-nav" id="navbar-nav">
+        <li><a href="index.html" id="nav-home">🏠 Beranda</a></li>
+        <li><a href="dashboard.html" id="nav-dash">📊 Dashboard</a></li>
+        <li><a href="prediction.html" id="nav-pred">🔮 Prediksi</a></li>
+        <li><a href="analytics.html" id="nav-anlyt">📈 Analitik</a></li>
+        <li><a href="hardware.html" id="nav-hw">🔌 Hardware</a></li>
+      </ul>
+      <div class="live-indicator">
+        <span class="live-dot"></span> LIVE
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="page-container">
+      <div class="hero-badge">🛰️ Powered by IoT Sensor Data · CASAS Dataset</div>
+      <h1 class="hero-title">
+        Sistem Cerdas<br>
+        <span class="gradient-text">Parkir Kampus IoT</span>
+      </h1>
+      <p class="hero-subtitle">
+        Monitoring & prediksi ketersediaan parkir kampus secara real-time menggunakan jaringan sensor IoT dan machine learning berbasis data temporal.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fade-in-up 0.9s ease 0.3s both;">
+        <a href="dashboard.html" class="btn btn-primary" id="btn-dashboard">
+          📊 Lihat Dashboard
+        </a>
+        <a href="prediction.html" class="btn btn-ghost" id="btn-predict">
+          🔮 Prediksi Parkir
+        </a>
+      </div>
+
+      <!-- Clock -->
+      <div style="margin-top:32px;opacity:0.55;font-size:0.9rem;animation:fade-in-up 1s ease 0.4s both;">
+        <span class="js-clock"></span> · <span class="js-date"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS OVERVIEW -->
+  <section>
+    <div class="page-container">
+      <div class="stats-grid" id="stats-grid">
+        <!-- Rendered by JS -->
+        <div class="stat-card skeleton" style="height:110px" data-color="cyan"></div>
+        <div class="stat-card skeleton" style="height:110px" data-color="violet"></div>
+        <div class="stat-card skeleton" style="height:110px" data-color="emerald"></div>
+        <div class="stat-card skeleton" style="height:110px" data-color="amber"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE ZONE STATUS -->
+  <section style="margin-top:32px;">
+    <div class="page-container">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="icon">🗺️</span>
+          Status Zona Parkir (Sekarang)
+        </h2>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);">
+            Diperbarui: <span class="js-clock" style="color:rgba(255,255,255,0.65)"></span>
+          </div>
+          <span class="status-badge badge-available">● Sistem Aktif</span>
+        </div>
+      </div>
+      <div class="zones-grid" id="zones-grid">
+        <div class="zone-card skeleton" style="height:180px"></div>
+        <div class="zone-card skeleton" style="height:180px"></div>
+        <div class="zone-card skeleton" style="height:180px"></div>
+        <div class="zone-card skeleton" style="height:180px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TODAY'S CHART -->
+  <section style="margin-top:32px;">
+    <div class="page-container">
+      <div class="grid-2">
+        <!-- Trend Hari Ini -->
+        <div class="card">
+          <div class="section-header">
+            <h2 class="section-title"><span class="icon">📈</span> Tren Hunian Hari Ini</h2>
+          </div>
+          <div class="chart-wrapper" style="height:220px">
+            <canvas id="trend-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Sensor Feed -->
+        <div class="card">
+          <div class="section-header">
+            <h2 class="section-title"><span class="icon">📡</span> Sensor Events Live</h2>
+            <span class="live-indicator" style="font-size:0.72rem;padding:4px 10px;">
+              <span class="live-dot"></span>AKTIF
+            </span>
+          </div>
+          <div class="sensor-feed" id="sensor-feed"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK PREDICTION -->
+  <section style="margin-top:32px;">
+    <div class="page-container">
+      <div class="card" style="background:linear-gradient(135deg,rgba(93,71,216,0.15),rgba(0,212,255,0.1));border-color:rgba(93,71,216,0.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+          <div>
+            <div style="font-family:var(--font-display);font-size:1.4rem;font-weight:800;margin-bottom:8px;">🔮 Prediksi Parkir Besok</div>
+            <div id="quick-pred-text" style="color:rgba(255,255,255,0.6);font-size:0.9rem;max-width:480px;line-height:1.6;">
+              Memuat prediksi...
+            </div>
+          </div>
+          <a href="prediction.html" class="btn btn-primary" id="btn-full-prediction">Lihat Prediksi Lengkap →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IoT INFO BANNER -->
+  <section style="margin-top:32px;">
+    <div class="page-container">
+      <div class="section-header" style="margin-bottom:20px;">
+        <h2 class="section-title"><span class="icon">🔌</span> Arsitektur Sistem IoT</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(0,212,255,0.15);">📡</div>
+          <div class="insight-body">
+            <div class="insight-title">Sensor Ultrasonik</div>
+            <div class="insight-text">HC-SR04 mendeteksi keberadaan kendaraan di setiap slot parkir dengan akurasi tinggi</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(139,92,246,0.15);">🔐</div>
+          <div class="insight-body">
+            <div class="insight-title">RFID Gate System</div>
+            <div class="insight-text">Kartu RFID mahasiswa/dosen digunakan untuk akses pintu masuk dan keluar parkir otomatis</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(16,185,129,0.15);">🧠</div>
+          <div class="insight-body">
+            <div class="insight-title">Edge Computing</div>
+            <div class="insight-text">Raspberry Pi / ESP32 memproses data sensor lokal dan mengirim ke cloud via MQTT</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(245,158,11,0.15);">☁️</div>
+          <div class="insight-body">
+            <div class="insight-title">Cloud Analytics</div>
+            <div class="insight-text">Data historis dianalisis dengan ML untuk prediksi ketersediaan parkir jam dan hari ke depan</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div>
+      <strong style="color:rgba(255,255,255,0.6);">SmartPark Kampus IoT</strong> · Rancang Bangun Sistem Prediksi Ketersediaan Parkir
+    </div>
+    <div style="margin-top:8px;">
+      Dataset: CASAS Smart Home Activity Recognition · <span id="footer-events"></span> sensor events diproses
+    </div>
+    <div style="margin-top:6px;font-size:0.72rem;">
+      © 2025 · Dibuat dengan ❤️ menggunakan HTML, CSS, JS & Python ML
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    (async () => {
+      initNavbar();
+      startClock();
+
+      // Load data
+      await loadData();
+
+      const today = getTodayData();
+      const hour = Math.min(Math.max(new Date().getHours(), 6), 21);
+      const hourData = getHourData(today, hour);
+      const config = APP.parkingData?.config;
+
+      // ── Stats Grid ──
+      const statsGrid = document.getElementById('stats-grid');
+      if (hourData && config) {
+        const totalAvail = hourData.total_tersedia;
+        const totalOcc   = Math.round(hourData.total_occupancy_rate * 100);
+        const stats = APP.parkingData?.statistics;
+
+        statsGrid.innerHTML = `
+          <div class="stat-card" data-color="cyan" style="animation-delay:0s">
+            <div class="stat-icon">🅿️</div>
+            <div class="stat-value" id="cnt-avail">—</div>
+            <div class="stat-label">Slot Tersedia Sekarang</div>
+            <div class="stat-change ${totalOcc > 75 ? 'down' : 'up'}">${totalOcc < 75 ? '✓ Normal' : '⚠ Hampir penuh'}</div>
+          </div>
+          <div class="stat-card" data-color="violet" style="animation-delay:0.1s">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" id="cnt-occ">—</div>
+            <div class="stat-label">Tingkat Hunian</div>
+            <div class="stat-change ${totalOcc > 50 ? 'down' : 'up'}">${config.total_slot - totalAvail} kendaraan</div>
+          </div>
+          <div class="stat-card" data-color="emerald" style="animation-delay:0.2s">
+            <div class="stat-icon">🛰️</div>
+            <div class="stat-value" id="cnt-events">—</div>
+            <div class="stat-label">Total Sensor Events</div>
+            <div class="stat-change up">${APP.parkingData?.meta?.files_processed || 18} file dataset</div>
+          </div>
+          <div class="stat-card" data-color="amber" style="animation-delay:0.3s">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-value">${stats?.busiest_hour || 10}<span style="font-size:1rem;opacity:0.6">:00</span></div>
+            <div class="stat-label">Jam Tersibuk</div>
+            <div class="stat-change down">Rata-rata ${Math.round((stats?.avg_occupancy_rate||0.47)*100)}% terisi</div>
+          </div>
+        `;
+
+        setTimeout(() => {
+          const evEl = document.getElementById('cnt-events');
+          const avEl = document.getElementById('cnt-avail');
+          const ocEl = document.getElementById('cnt-occ');
+          const evts = APP.parkingData?.meta?.total_sensor_events || 4782691;
+          if(evEl) animateCounter(evEl, Math.round(evts/1000), 1500, 'K');
+          if(avEl) animateCounter(avEl, totalAvail, 1000);
+          if(ocEl) animateCounter(ocEl, totalOcc, 1000, '%');
+          const footerEv = document.getElementById('footer-events');
+          if(footerEv) footerEv.textContent = fmtNum(evts);
+        }, 200);
+      }
+
+      // ── Zone Cards ──
+      renderZoneCards(document.getElementById('zones-grid'), hourData);
+
+      // ── Trend Chart ──
+      buildTrendChart('trend-chart', today, 'Hari Ini');
+
+      // ── Sensor Feed ──
+      startSensorFeed(document.getElementById('sensor-feed'));
+
+      // ── Quick Prediction ──
+      const pred = APP.predictions?.predictions?.[0];
+      if (pred) {
+        const peak = pred.hourly_predictions?.[10];
+        const best = pred.hourly_predictions?.[pred.best_parking_hour || 6];
+        document.getElementById('quick-pred-text').innerHTML = `
+          Besok (<strong>${pred.weekday_name}</strong>) — jam puncak sekitar <strong>10:00</strong> dengan estimasi hunian 
+          <strong>${Math.round((peak?.predicted_occupancy_rate||0.9)*100)}%</strong>. 
+          Waktu terbaik untuk parkir: <strong>${fmtHour(pred.best_parking_hour || 6)}</strong> 
+          dengan ~<strong>${best?.predicted_available||280}</strong> slot tersedia.
+        `;
+      }
+    })();
+  </script>
+</body>
+</html>

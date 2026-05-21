@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "author": "SmartPark Kampus IoT",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 200,
+      "left": 320,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic1",
+      "top": -60,
+      "left": 20,
+      "attrs": { "distance": "200" },
+      "label": "Slot A1"
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic2",
+      "top": 60,
+      "left": 20,
+      "attrs": { "distance": "200" },
+      "label": "Slot A2"
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic3",
+      "top": 180,
+      "left": 20,
+      "attrs": { "distance": "200" },
+      "label": "Slot B1"
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic4",
+      "top": 300,
+      "left": 20,
+      "attrs": { "distance": "200" },
+      "label": "Slot B2"
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -60,
+      "left": 180,
+      "attrs": { "color": "red" },
+      "label": "LED Slot A1"
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": 60,
+      "left": 180,
+      "attrs": { "color": "red" },
+      "label": "LED Slot A2"
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": 180,
+      "left": 180,
+      "attrs": { "color": "red" },
+      "label": "LED Slot B1"
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led4",
+      "top": 300,
+      "left": 180,
+      "attrs": { "color": "red" },
+      "label": "LED Slot B2"
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledStatus",
+      "top": 420,
+      "left": 180,
+      "attrs": { "color": "green" },
+      "label": "WiFi Status"
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "top": 440,
+      "left": 320,
+      "attrs": { "pins": "i2c", "address": "0x27" }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo",
+      "top": 180,
+      "left": 620,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 60,
+      "left": 620,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -40,
+      "left": 240,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 80,
+      "left": 240,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 200,
+      "left": 240,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r4",
+      "top": 320,
+      "left": 240,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r5",
+      "top": 440,
+      "left": 240,
+      "attrs": { "value": "220" }
+    }
+  ],
+  "connections": [
+    ["esp32:GND.1",    "ultrasonic1:GND",  "black",  ["v0"]],
+    ["esp32:5V",       "ultrasonic1:VCC",  "red",    ["v0"]],
+    ["esp32:D13",      "ultrasonic1:TRIG", "yellow", []],
+    ["esp32:D12",      "ultrasonic1:ECHO", "blue",   []],
+
+    ["esp32:GND.1",    "ultrasonic2:GND",  "black",  ["v0"]],
+    ["esp32:5V",       "ultrasonic2:VCC",  "red",    ["v0"]],
+    ["esp32:D14",      "ultrasonic2:TRIG", "yellow", []],
+    ["esp32:D27",      "ultrasonic2:ECHO", "blue",   []],
+
+    ["esp32:GND.1",    "ultrasonic3:GND",  "black",  ["v0"]],
+    ["esp32:5V",       "ultrasonic3:VCC",  "red",    ["v0"]],
+    ["esp32:D26",      "ultrasonic3:TRIG", "yellow", []],
+    ["esp32:D25",      "ultrasonic3:ECHO", "blue",   []],
+
+    ["esp32:GND.1",    "ultrasonic4:GND",  "black",  ["v0"]],
+    ["esp32:5V",       "ultrasonic4:VCC",  "red",    ["v0"]],
+    ["esp32:D33",      "ultrasonic4:TRIG", "yellow", []],
+    ["esp32:D32",      "ultrasonic4:ECHO", "blue",   []],
+
+    ["esp32:D4",       "r1:1",             "orange", []],
+    ["r1:2",           "led1:A",           "orange", []],
+    ["led1:K",         "esp32:GND.1",      "black",  []],
+
+    ["esp32:D5",       "r2:1",             "orange", []],
+    ["r2:2",           "led2:A",           "orange", []],
+    ["led2:K",         "esp32:GND.1",      "black",  []],
+
+    ["esp32:D18",      "r3:1",             "orange", []],
+    ["r3:2",           "led3:A",           "orange", []],
+    ["led3:K",         "esp32:GND.1",      "black",  []],
+
+    ["esp32:D19",      "r4:1",             "orange", []],
+    ["r4:2",           "led4:A",           "orange", []],
+    ["led4:K",         "esp32:GND.1",      "black",  []],
+
+    ["esp32:D23",      "r5:1",             "green",  []],
+    ["r5:2",           "ledStatus:A",      "green",  []],
+    ["ledStatus:K",    "esp32:GND.1",      "black",  []],
+
+    ["esp32:D21",      "lcd:SDA",          "purple", []],
+    ["esp32:D22",      "lcd:SCL",          "purple", []],
+    ["esp32:3V3",      "lcd:VCC",          "red",    []],
+    ["esp32:GND.1",    "lcd:GND",          "black",  []],
+
+    ["esp32:D15",      "servo:PWM",        "yellow", []],
+    ["esp32:5V",       "servo:V+",         "red",    []],
+    ["esp32:GND.1",    "servo:GND",        "black",  []],
+
+    ["esp32:D2",       "buzzer:1",         "purple", []],
+    ["esp32:GND.1",    "buzzer:2",         "black",  []]
+  ],
+  "dependencies": {}
+}

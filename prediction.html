@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prediksi Parkir · SmartPark Kampus IoT</title>
+  <meta name="description" content="Prediksi ketersediaan parkir kampus per jam untuk 7 hari ke depan menggunakan model machine learning berbasis data IoT.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="brand-icon">🅿️</div>
+        <div class="brand-text">SmartPark<span class="brand-sub">Kampus IoT System</span></div>
+      </a>
+      <ul class="navbar-nav" id="navbar-nav">
+        <li><a href="index.html">🏠 Beranda</a></li>
+        <li><a href="dashboard.html">📊 Dashboard</a></li>
+        <li><a href="prediction.html" class="active">🔮 Prediksi</a></li>
+        <li><a href="analytics.html">📈 Analitik</a></li>
+        <li><a href="hardware.html">🔌 Hardware</a></li>
+      </ul>
+      <div class="live-indicator">
+        <span class="live-dot"></span> LIVE
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1 class="page-title">🔮 Prediksi <span class="text-gradient">Ketersediaan Parkir</span></h1>
+      <p class="page-desc">Prediksi berbasis Machine Learning dari pola temporal sensor IoT — akurat untuk 7 hari ke depan.</p>
+    </div>
+
+    <!-- MODEL INFO BANNER -->
+    <div class="card" style="background:linear-gradient(135deg,rgba(124,108,248,0.12),rgba(0,212,255,0.08));border-color:rgba(124,108,248,0.25);margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;text-align:center;">
+        <div>
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-display);color:var(--accent-cyan);">4.78M</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:4px;">Sensor Events Diproses</div>
+        </div>
+        <div>
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-display);color:var(--accent-violet);">41</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:4px;">Jenis Aktivitas Terdeteksi</div>
+        </div>
+        <div>
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-display);color:var(--accent-emerald);">18</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:4px;">File Dataset Teranalisis</div>
+        </div>
+        <div>
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-display);color:var(--accent-amber);">7</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:4px;">Hari Prediksi ke Depan</div>
+        </div>
+        <div>
+          <div style="font-size:1.8rem;font-weight:900;font-family:var(--font-display);color:var(--accent-magenta);">±10%</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:4px;">Margin Prediksi</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY SELECTOR -->
+    <div class="section-header" style="margin-bottom:20px;">
+      <h2 class="section-title"><span class="icon">📅</span> Pilih Hari Prediksi</h2>
+    </div>
+    <div class="day-tabs" id="day-tabs"></div>
+
+    <!-- SELECTED DAY OVERVIEW -->
+    <div class="card" style="margin-top:20px;" id="day-overview">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
+        <div id="day-overview-name" style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:white;"></div>
+        <div id="day-overview-stats" style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;"></div>
+      </div>
+    </div>
+
+    <!-- PREDICTION CHART -->
+    <div class="card" style="margin-top:20px;">
+      <div class="section-header">
+        <h2 class="section-title"><span class="icon">📈</span> Grafik Prediksi 24 Jam</h2>
+        <div style="display:flex;gap:16px;font-size:0.75rem;color:rgba(255,255,255,0.45);align-items:center;">
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:20px;height:2px;background:#a89df5;display:inline-block;"></span>Prediksi</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:20px;height:2px;background:rgba(255,255,255,0.2);border:1px dashed rgba(255,255,255,0.3);display:inline-block;"></span>Interval Kepercayaan</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:20px;height:2px;background:#10b981;display:inline-block;"></span>Slot Tersedia</span>
+        </div>
+      </div>
+      <div class="chart-wrapper" style="height:280px;">
+        <canvas id="pred-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- HOURLY PREDICTION LIST -->
+    <div class="grid-2" style="margin-top:24px;">
+      <!-- List -->
+      <div class="card">
+        <div class="section-header">
+          <h2 class="section-title"><span class="icon">🕐</span> Detail Per Jam</h2>
+        </div>
+        <div id="pred-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <!-- Best times -->
+      <div>
+        <!-- Best times card -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="section-header">
+            <h2 class="section-title"><span class="icon">✅</span> Rekomendasi Waktu Parkir</h2>
+          </div>
+          <div id="best-times" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+        </div>
+
+        <!-- Worst times card -->
+        <div class="card">
+          <div class="section-header">
+            <h2 class="section-title"><span class="icon">⚠️</span> Waktu Padat - Hindari</h2>
+          </div>
+          <div id="worst-times" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZONE PREDICTIONS -->
+    <div class="card" style="margin-top:24px;">
+      <div class="section-header">
+        <h2 class="section-title"><span class="icon">🗺️</span> Prediksi Per Zona (Jam Puncak)</h2>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);" id="peak-hour-label">Jam 09:00 - 11:00</div>
+      </div>
+      <div class="zones-grid" id="pred-zones"></div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="card" style="margin-top:24px;background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(217,70,239,0.08));">
+      <h2 class="section-title" style="margin-bottom:20px;"><span class="icon">🧠</span> Cara Kerja Prediksi</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(0,212,255,0.15);">1️⃣</div>
+          <div class="insight-body">
+            <div class="insight-title">Pengumpulan Data Sensor</div>
+            <div class="insight-text">Sensor ultrasonik & RFID mengumpulkan data masuk/keluar kendaraan secara real-time selama 30+ hari</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(139,92,246,0.15);">2️⃣</div>
+          <div class="insight-body">
+            <div class="insight-title">Feature Engineering</div>
+            <div class="insight-text">Ekstraksi fitur temporal: jam, hari, minggu, tren musiman, dan pola aktivitas dari dataset CASAS IoT</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(16,185,129,0.15);">3️⃣</div>
+          <div class="insight-body">
+            <div class="insight-title">Model ML Training</div>
+            <div class="insight-text">Temporal Pattern Regression dilatih dari 4.78 juta sensor events untuk mempelajari pola hunian kampus</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon" style="background:rgba(245,158,11,0.15);">4️⃣</div>
+          <div class="insight-body">
+            <div class="insight-title">Prediksi & Confidence</div>
+            <div class="insight-text">Model menghasilkan prediksi hunian per jam dengan interval kepercayaan ±8-20% tergantung jarak hari</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div>SmartPark Kampus IoT · Modul Prediksi</div>
+    <div style="margin-top:6px;font-size:0.72rem;">Model: Temporal Pattern Regression · Dataset: CASAS Smart Home IoT</div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+  (async () => {
+    initNavbar();
+    startClock();
+    await loadData();
+
+    const preds = APP.predictions?.predictions || [];
+    const config = APP.predictions?.config || APP.parkingData?.config;
+    let selectedPredIdx = 0;
+
+    // ── Build Day Tabs ──
+    const tabsContainer = document.getElementById('day-tabs');
+    preds.forEach((p, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'day-tab' + (p.is_weekend ? ' weekend' : '') + (i === 0 ? ' active' : '');
+      btn.id = `day-tab-${i}`;
+      btn.textContent = `${p.weekday_name} · ${p.date}`;
+      btn.addEventListener('click', () => {
+        tabsContainer.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPredIdx = i;
+        renderPredDay(i);
+      });
+      tabsContainer.appendChild(btn);
+    });
+
+    function renderPredDay(idx) {
+      const dayPred = preds[idx];
+      if (!dayPred) return;
+
+      // Overview
+      document.getElementById('day-overview-name').innerHTML = `
+        <div>${dayPred.weekday_name}</div>
+        <div style="font-size:0.85rem;font-weight:400;color:rgba(255,255,255,0.45);margin-top:4px;">${dayPred.date}</div>
+        ${dayPred.is_weekend ? '<span class="status-badge badge-moderate" style="margin-top:8px;">Akhir Pekan</span>' : '<span class="status-badge badge-available" style="margin-top:8px;">Hari Kerja</span>'}
+      `;
+
+      // Compute avg predicted occupancy
+      const hours = Object.values(dayPred.hourly_predictions);
+      const avgRate = hours.reduce((s,h) => s + h.predicted_occupancy_rate, 0) / hours.length;
+      const peakH = Object.entries(dayPred.hourly_predictions).sort(([,a],[,b]) => b.predicted_occupancy_rate - a.predicted_occupancy_rate)[0];
+      const lowH  = Object.entries(dayPred.hourly_predictions).sort(([,a],[,b]) => a.predicted_occupancy_rate - b.predicted_occupancy_rate)[0];
+      const avgStatus = STATUS.getStatus(avgRate);
+      const day_factors = {0:1.0, 1:0.95, 2:1.0, 3:0.92, 4:0.88, 5:0.35, 6:0.15};
+
+      document.getElementById('day-overview-stats').innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:${avgStatus.color};">${Math.round(avgRate*100)}%</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);">Rata-rata hunian</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--accent-rose);">${fmtHour(parseInt(peakH[0]))}</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);">Jam paling padat</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--accent-emerald);">${fmtHour(parseInt(lowH[0]))}</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);">Jam paling kosong</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--accent-cyan);">${Math.round((1-avgRate)*config?.total_slot||300)}</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);">Rata-rata tersedia</div>
+        </div>
+      `;
+
+      // Chart
+      buildPredictionChart('pred-chart', dayPred);
+
+      // List
+      renderPredictionList(document.getElementById('pred-list'), dayPred);
+
+      // Best & worst times
+      const allHours = Object.entries(dayPred.hourly_predictions).map(([h, p]) => ({h: parseInt(h), ...p}));
+      const best3 = [...allHours].sort((a,b) => a.predicted_occupancy_rate - b.predicted_occupancy_rate).slice(0, 3);
+      const worst3 = [...allHours].sort((a,b) => b.predicted_occupancy_rate - a.predicted_occupancy_rate).slice(0, 3);
+
+      const bestEl = document.getElementById('best-times');
+      bestEl.innerHTML = '';
+      best3.forEach(p => {
+        const s = STATUS.getStatus(p.predicted_occupancy_rate);
+        const div = document.createElement('div');
+        div.className = 'insight-card';
+        div.style.padding = '12px 16px';
+        div.innerHTML = `
+          <div style="font-size:1.2rem;">✅</div>
+          <div>
+            <div style="font-weight:700;color:var(--accent-emerald);">${fmtHour(p.h)}</div>
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);">${p.predicted_available} slot tersedia · ${Math.round(p.predicted_occupancy_rate*100)}% terisi</div>
+          </div>
+        `;
+        bestEl.appendChild(div);
+      });
+
+      const worstEl = document.getElementById('worst-times');
+      worstEl.innerHTML = '';
+      worst3.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'insight-card';
+        div.style.padding = '12px 16px';
+        div.innerHTML = `
+          <div style="font-size:1.2rem;">⚠️</div>
+          <div>
+            <div style="font-weight:700;color:var(--accent-rose);">${fmtHour(p.h)}</div>
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);">${p.predicted_available} slot tersedia · ${Math.round(p.predicted_occupancy_rate*100)}% terisi</div>
+          </div>
+        `;
+        worstEl.appendChild(div);
+      });
+
+      // Zone predictions at peak hour
+      const peakHour = parseInt(peakH[0]);
+      document.getElementById('peak-hour-label').textContent = `Prediksi jam ${fmtHour(peakHour)}`;
+      
+      // Build synthetic zone data from peak
+      const peakData = peakH[1];
+      const peakRate = peakData.predicted_occupancy_rate;
+      const syntheticHourData = { zona: {} };
+      if (config?.zona) {
+        Object.entries(config.zona).forEach(([id, z]) => {
+          const zRate = Math.min(1, peakRate * (z.tipe === 'motor' ? 1.05 : 0.95) + (Math.random()-0.5)*0.05);
+          const terisi = Math.round(zRate * z.kapasitas);
+          syntheticHourData.zona[id] = {
+            terisi,
+            tersedia: z.kapasitas - terisi,
+            kapasitas: z.kapasitas,
+            occupancy_rate: zRate
+          };
+        });
+      }
+      renderZoneCards(document.getElementById('pred-zones'), syntheticHourData);
+    }
+
+    if (preds.length > 0) renderPredDay(0);
+  })();
+  </script>
+</body>
+</html>

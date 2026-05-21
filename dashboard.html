@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Monitoring · SmartPark Kampus IoT</title>
+  <meta name="description"
+    content="Dashboard monitoring real-time ketersediaan parkir kampus dengan sensor IoT, heatmap, dan statistik lengkap.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Library MQTT over WebSockets -->
+  <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    /* Premium Glassmorphic Hardware Cards */
+    .card-neon {
+      border: 1px solid rgba(124, 108, 248, 0.25) !important;
+      background: linear-gradient(135deg, rgba(20, 16, 42, 0.8), rgba(10, 6, 24, 0.9)) !important;
+      box-shadow: 0 8px 32px rgba(124, 108, 248, 0.15) !important;
+    }
+
+    .hardware-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 16px;
+    }
+
+    .hardware-slot-card,
+    .hardware-gate-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hardware-slot-card:hover,
+    .hardware-gate-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 20px rgba(0, 212, 255, 0.08);
+      border-color: rgba(124, 108, 248, 0.4);
+    }
+
+    .hw-slot-header {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .hw-slot-icon {
+      font-size: 2.2rem;
+      margin: 8px 0;
+      transition: transform 0.3s ease;
+      display: inline-block;
+    }
+
+    .hw-gate-icon {
+      font-size: 2.2rem;
+      margin: 8px 0;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-block;
+    }
+
+    .hw-slot-status {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .hw-slot-detail {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.3);
+      margin-top: 4px;
+    }
+
+    /* State Classes for Live IoT Updates */
+    .hw-occupied {
+      background: rgba(244, 63, 94, 0.04) !important;
+      border-color: rgba(244, 63, 94, 0.25) !important;
+    }
+
+    .hw-occupied .hw-slot-status {
+      color: #f43f5e !important;
+    }
+
+    .hw-occupied .hw-slot-icon {
+      filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.6));
+    }
+
+    .hw-available {
+      background: rgba(16, 185, 129, 0.04) !important;
+      border-color: rgba(16, 185, 129, 0.25) !important;
+    }
+
+    .hw-available .hw-slot-status {
+      color: #10b981 !important;
+    }
+
+    .hw-available .hw-slot-icon {
+      filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+      opacity: 0.3;
+    }
+
+    .hw-gate-open {
+      background: rgba(0, 212, 255, 0.04) !important;
+      border-color: rgba(0, 212, 255, 0.25) !important;
+    }
+
+    .hw-gate-open .hw-gate-icon {
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.6));
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="brand-icon">🅿️</div>
+        <div class="brand-text">SmartPark<span class="brand-sub">Kampus IoT System</span></div>
+      </a>
+      <ul class="navbar-nav" id="navbar-nav">
+        <li><a href="index.html">🏠 Beranda</a></li>
+        <li><a href="dashboard.html" class="active">📊 Dashboard</a></li>
+        <li><a href="prediction.html">🔮 Prediksi</a></li>
+        <li><a href="analytics.html">📈 Analitik</a></li>
+        <li><a href="hardware.html">🔌 Hardware</a></li>
+      </ul>
+      <div class="live-indicator">
+        <span class="live-dot"></span> LIVE
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-container">
+    <div class="page-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+          <h1 class="page-title">📊 Dashboard <span class="text-gradient">Monitoring</span></h1>
+          <p class="page-desc">Monitoring real-time kondisi parkir kampus dari semua zona dan sensor IoT.</p>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:700;" class="js-clock"></div>
+          <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);" class="js-date"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE HARDWARE SIMULATOR WIDGET (MQTT) -->
+    <div class="card card-neon" style="margin-bottom: 24px;">
+      <div class="section-header"
+        style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; margin-bottom: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <h2 class="section-title" style="margin-bottom: 0;">
+          <span class="icon">📡</span> Live IoT Hardware Simulator <span class="text-gradient"
+            style="font-size: 0.8rem; font-weight: 500;">(Wokwi Direct Connection)</span>
+        </h2>
+        <span class="status-badge" id="mqtt-status-badge"
+          style="background: rgba(244, 63, 94, 0.1); color: #f43f5e; border-color: rgba(244, 63, 94, 0.2); font-family: monospace; font-size: 0.72rem; padding: 4px 10px; border-radius: 6px;">
+          MQTT: DISCONNECTED
+        </span>
+      </div>
+
+      <div class="hardware-grid">
+        <!-- Slot A1 -->
+        <div class="hardware-slot-card hw-available" id="hw-slot-0">
+          <div class="hw-slot-header">Slot A1 (Zona A)</div>
+          <div class="hw-slot-icon">🚗</div>
+          <div class="hw-slot-status">KOSONG</div>
+          <div class="hw-slot-detail" id="hw-slot-dist-0">-- cm</div>
+        </div>
+        <!-- Slot A2 -->
+        <div class="hardware-slot-card hw-available" id="hw-slot-1">
+          <div class="hw-slot-header">Slot A2 (Zona A)</div>
+          <div class="hw-slot-icon">🚗</div>
+          <div class="hw-slot-status">KOSONG</div>
+          <div class="hw-slot-detail" id="hw-slot-dist-1">-- cm</div>
+        </div>
+        <!-- Slot B1 -->
+        <div class="hardware-slot-card hw-available" id="hw-slot-2">
+          <div class="hw-slot-header">Slot B1 (Zona B)</div>
+          <div class="hw-slot-icon">🚗</div>
+          <div class="hw-slot-status">KOSONG</div>
+          <div class="hw-slot-detail" id="hw-slot-dist-2">-- cm</div>
+        </div>
+        <!-- Slot B2 -->
+        <div class="hardware-slot-card hw-available" id="hw-slot-3">
+          <div class="hw-slot-header">Slot B2 (Zona B)</div>
+          <div class="hw-slot-icon">🚗</div>
+          <div class="hw-slot-status">KOSONG</div>
+          <div class="hw-slot-detail" id="hw-slot-dist-3">-- cm</div>
+        </div>
+        <!-- Gate Servo -->
+        <div class="hardware-gate-card" id="hw-gate-card">
+          <div class="hw-slot-header">Gate Barrier (Servo)</div>
+          <div class="hw-gate-icon" id="hw-gate-icon">🚧</div>
+          <div class="hw-slot-status" id="hw-gate-status" style="color: #f43f5e; font-weight: 800;">CLOSED</div>
+          <div class="hw-slot-detail" id="hw-gate-detail">Sudut: 0°</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP OVERVIEW ROW -->
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:24px;"
+      id="overview-row">
+      <!-- Progress Ring -->
+      <div class="card" style="text-align:center;min-width:200px;">
+        <div class="section-title" style="justify-content:center;margin-bottom:16px;font-size:0.85rem;">Total Hunian
+        </div>
+        <div class="progress-ring-wrap">
+          <svg class="progress-ring" width="160" height="160" viewBox="0 0 160 160">
+            <circle class="progress-ring-track" />
+            <circle class="progress-ring-fill" />
+          </svg>
+          <div class="progress-ring-label" id="ring-label"></div>
+        </div>
+        <div style="margin-top:16px;" id="ring-detail"></div>
+      </div>
+
+      <!-- Stats row -->
+      <div>
+        <div class="stats-grid" id="dash-stats"></div>
+      </div>
+    </div>
+
+    <!-- ZONE CARDS -->
+    <div class="section-header">
+      <h2 class="section-title"><span class="icon">🗺️</span> Status Per Zona</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="hour-select" style="font-size:0.8rem;color:rgba(255,255,255,0.5);">Tampilkan jam:</label>
+        <select class="form-select" id="hour-select" style="width:auto;"></select>
+      </div>
+    </div>
+    <div class="zones-grid" id="zones-grid"></div>
+
+    <!-- CHARTS ROW -->
+    <div class="grid-2" style="margin-top:24px;">
+      <!-- Daily Trend -->
+      <div class="card">
+        <div class="section-header">
+          <h2 class="section-title"><span class="icon">📈</span> Tren Hunian Harian</h2>
+          <select class="form-select btn-sm" id="day-select" style="width:auto;"></select>
+        </div>
+        <div class="chart-wrapper" style="height:240px;">
+          <canvas id="trend-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Weekly Bar -->
+      <div class="card">
+        <div class="section-header">
+          <h2 class="section-title"><span class="icon">📅</span> Rata-rata per Hari</h2>
+        </div>
+        <div class="chart-wrapper" style="height:240px;">
+          <canvas id="weekly-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEATMAP -->
+    <div class="card" style="margin-top:24px;">
+      <div class="section-header">
+        <h2 class="section-title"><span class="icon">🌡️</span> Heatmap Hunian 14 Hari</h2>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);">Baris = Hari · Kolom = Jam</div>
+      </div>
+      <div class="heatmap-container">
+        <div id="heatmap-container"></div>
+      </div>
+    </div>
+
+    <!-- SENSOR FEED + HOURLY TABLE -->
+    <div class="grid-2" style="margin-top:24px;">
+      <!-- Sensor Feed -->
+      <div class="card">
+        <div class="section-header">
+          <h2 class="section-title"><span class="icon">📡</span> Sensor Feed Real-time</h2>
+          <span class="live-indicator" style="font-size:0.72rem;padding:4px 10px;">
+            <span class="live-dot"></span>AKTIF
+          </span>
+        </div>
+        <div class="sensor-feed" id="sensor-feed"></div>
+      </div>
+
+      <!-- Hourly Summary Table -->
+      <div class="card">
+        <div class="section-header">
+          <h2 class="section-title"><span class="icon">🕐</span> Ringkasan Per Jam</h2>
+        </div>
+        <div style="overflow-x:auto;max-height:340px;overflow-y:auto;">
+          <table class="data-table" id="hourly-table">
+            <thead>
+              <tr>
+                <th>Jam</th>
+                <th>Hunian</th>
+                <th>Tersedia</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="hourly-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end page-container -->
+
+  <footer class="footer">
+    <div>SmartPark Kampus IoT · Dashboard Monitoring</div>
+    <div style="margin-top:6px;font-size:0.72rem;">Data diperbarui otomatis setiap 30 detik</div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    (async () => {
+      initNavbar();
+      startClock();
+      await loadData();
+
+      const config = APP.parkingData?.config;
+      const today = getTodayData();
+      let currentHour = Math.min(Math.max(new Date().getHours(), 6), 21);
+      let selectedDay = APP.parkingData?.daily_data?.findIndex(d => d.date === new Date().toISOString().split('T')[0]);
+      if (selectedDay < 0) selectedDay = 0;
+
+      // ── Hour Select ──
+      const hourSel = document.getElementById('hour-select');
+      for (let h = 6; h <= 21; h++) {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = fmtHour(h);
+        if (h === currentHour) opt.selected = true;
+        hourSel.appendChild(opt);
+      }
+
+      // ── Day Select ──
+      const daySel = document.getElementById('day-select');
+      const history = APP.parkingData?.daily_data?.filter(d => !d.is_future) || [];
+      history.slice(-14).forEach((d, i, arr) => {
+        const opt = document.createElement('option');
+        opt.value = APP.parkingData.daily_data.indexOf(d);
+        opt.textContent = `${d.weekday_name} ${d.date}`;
+        if (d.date === new Date().toISOString().split('T')[0]) opt.selected = true;
+        daySel.appendChild(opt);
+      });
+
+      // ── Render all ──
+      function renderAll(hour, dayIdx) {
+        const dayData = APP.parkingData?.daily_data?.[dayIdx] ?? today;
+        const hourData = getHourData(dayData, hour);
+        if (!hourData) return;
+
+        const rate = hourData.total_occupancy_rate;
+        const status = STATUS.getStatus(rate);
+
+        // Progress Ring
+        const svg = document.querySelector('.progress-ring');
+        const lbl = document.getElementById('ring-label');
+        const det = document.getElementById('ring-detail');
+        renderProgressRing(svg, lbl, rate, status.color);
+        if (det) det.innerHTML = `
+        <span class="status-badge ${status.class}">${status.label}</span>
+        <div style="margin-top:8px;font-size:0.8rem;color:rgba(255,255,255,0.4);">${hourData.total_terisi} / ${config?.total_slot || 300} terisi</div>
+      `;
+
+        // Stats
+        const dashStats = document.getElementById('dash-stats');
+        if (dashStats) {
+          const meta = APP.parkingData?.meta || {};
+          const stats = APP.parkingData?.statistics || {};
+          dashStats.innerHTML = `
+          <div class="stat-card" data-color="emerald">
+            <div class="stat-icon">🅿️</div>
+            <div class="stat-value" id="s-avail">${hourData.total_tersedia}</div>
+            <div class="stat-label">Slot Tersedia</div>
+            <div class="stat-change up">dari ${config?.total_slot} total</div>
+          </div>
+          <div class="stat-card" data-color="rose">
+            <div class="stat-icon">🚗</div>
+            <div class="stat-value">${hourData.total_terisi}</div>
+            <div class="stat-label">Slot Terpakai</div>
+            <div class="stat-change ${rate > 0.75 ? 'down' : 'up'}">${Math.round(rate * 100)}% hunian</div>
+          </div>
+          <div class="stat-card" data-color="cyan">
+            <div class="stat-icon">🛰️</div>
+            <div class="stat-value">${meta.files_processed || 18}</div>
+            <div class="stat-label">File Diproses</div>
+            <div class="stat-change up">${fmtNum(meta.total_sensor_events || 4782691)} events</div>
+          </div>
+          <div class="stat-card" data-color="amber">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-value">${stats.busiest_hour || 11}<span style="font-size:0.9rem;opacity:0.6">:00</span></div>
+            <div class="stat-label">Jam Tersibuk</div>
+            <div class="stat-change down">Rata-rata ${Math.round((stats.avg_occupancy_rate || 0.47) * 100)}%</div>
+          </div>
+        `;
+        }
+
+        // Zone Cards
+        renderZoneCards(document.getElementById('zones-grid'), hourData);
+
+        // Trend Chart
+        buildTrendChart('trend-chart', dayData);
+
+        // Hourly Table
+        const tbody = document.getElementById('hourly-tbody');
+        if (tbody) {
+          tbody.innerHTML = '';
+          for (let h = 6; h <= 21; h++) {
+            const hd = dayData?.hourly?.[h];
+            if (!hd) continue;
+            const s = STATUS.getStatus(hd.total_occupancy_rate);
+            const row = document.createElement('tr');
+            const isNow = h === new Date().getHours() && dayData?.date === new Date().toISOString().split('T')[0];
+            if (isNow) row.style.background = 'rgba(124,108,248,0.1)';
+            row.innerHTML = `
+            <td><strong style="${isNow ? 'color:var(--primary-200);' : ''}">${fmtHour(h)}${isNow ? ' ◀' : '  '}</strong></td>
+            <td>${Math.round(hd.total_occupancy_rate * 100)}%</td>
+            <td>${hd.total_tersedia}</td>
+            <td><span class="status-badge ${s.class}">${s.label}</span></td>
+          `;
+            tbody.appendChild(row);
+          }
+        }
+      }
+
+      // Ekspos renderAllPage secara global agar bisa dipanggil saat data MQTT masuk
+      window.renderAllPage = renderAll;
+
+      renderAll(currentHour, selectedDay);
+      buildWeeklyChart('weekly-chart');
+      buildHeatmap(document.getElementById('heatmap-container'));
+      startSensorFeed(document.getElementById('sensor-feed'));
+
+      // Inisialisasi koneksi MQTT WebSockets
+      if (typeof initMQTTConnection === 'function') {
+        initMQTTConnection();
+      }
+
+      // Event listeners
+      hourSel.addEventListener('change', () => {
+        currentHour = parseInt(hourSel.value);
+        renderAll(currentHour, selectedDay);
+      });
+
+      daySel.addEventListener('change', () => {
+        selectedDay = parseInt(daySel.value);
+        renderAll(currentHour, selectedDay);
+      });
+
+      // Auto-refresh zones every 30s
+      setInterval(() => {
+        const hd = getHourData(today, parseInt(hourSel.value));
+        if (hd) renderZoneCards(document.getElementById('zones-grid'), hd);
+      }, 30000);
+
+    })();
+  </script>
+</body>
+
+</html>
